@@ -1,0 +1,68 @@
+p, i, d = 5000, 5000, 5000
+cte = (self.target - temp[-1])
+icte = 0
+for i in temp: icte += self.target - i
+change = cte / p + icte / i / len(temp) - (temp[-1] - temp[-2]) / d
+if change > 2: change = 2
+if change < -2: change = -2
+self.angle += change
+if self.angle > 95: self.angle = 95
+if self.angle < -5: self.angle = -5
+
+
+
+
+
+#include <Stepper.h>
+
+#define motorPin1 8
+#define motorPin2 9
+#define motorPin3 10
+#define motorPin4 11
+
+int stepsPerRevolution = 200;
+int motorWheelSteps = 16;
+int opticsWheelSteps = 32;
+
+Stepper stepper(stepsPerRevolution, motorPin1, motorPin2, motorPin3, motorPin4);
+char arr[100];
+int cnt = 0;
+int curSteps = 0;
+
+void setup() {
+  Serial.begin(9600);
+  stepper.setSpeed(100);
+}
+
+void loop() {
+  if (Serial.available() > 0){
+    char curChar = (char)(Serial.read());
+    if (curChar == '\n'){
+      arr[cnt] = 0;
+      if (strcmp(arr, "test") == 0) Serial.write("test");
+      else {
+        int scnt = 0;
+        for(int i = 0; i < cnt; i++){
+          if (arr[i] == 's') scnt++;
+        }
+        String data = arr;
+        if (data.startsWith("set") and scnt == 1) {
+          Serial.print(data.substring(4, cnt));
+          moveTo(data.substring(4, cnt).toDouble());
+        }
+        else Serial.write("weird command");
+      }
+      cnt = 0;
+    }
+    else arr[cnt++] = curChar;
+  }
+}
+
+void moveTo(double angle){
+  stepper.step(positionFromAngle(angle) - curSteps);
+  curSteps = positionFromAngle(angle);
+}
+
+int positionFromAngle(double curAngle){
+  return round(1.0 * opticsWheelSteps / motorWheelSteps * stepsPerRevolution * curAngle / 360);
+}
